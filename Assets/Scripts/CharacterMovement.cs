@@ -2,53 +2,48 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class Character : MonoBehaviour
+public class CharacterMovement : MonoBehaviour
 {
-    public float moveSpeed = 5.0f;
-    private Animator animator;
-	public float turnSpeed = 10f;
+	public float speed = 5f;
+	public float rotationSpeed = 720f;
+
+	private Rigidbody rb;
 
 	// Start is called before the first frame update
 	void Start()
     {
-        animator = GetComponent<Animator>();
+		rb = GetComponent<Rigidbody>();
     }
 
     // Update is called once per frame
     void Update()
     {
-        CharacterMovement();
+		MoveAndRotate();
     }
 
-    void CharacterMovement()
+    void MoveAndRotate()
     {
-		float moveHorizontal = Input.GetAxis("Horizontal");
-		float moveVertical = Input.GetAxis("Vertical");
+		// Get input from WASD keys
+		float moveX = Input.GetAxis("Horizontal");
+		float moveZ = Input.GetAxis("Vertical");
 
-		// 카메라의 방향을 기준으로 이동 벡터 계산
-		Vector3 cameraForward = Camera.main.transform.forward;
-		Vector3 cameraRight = Camera.main.transform.right;
+		// Calculate the movement direction
+		Vector3 moveDirection = new Vector3(moveX, 0, moveZ);
 
-		cameraForward.y = 0; // 수직 방향의 영향 제거
-		cameraRight.y = 0;
-		cameraForward.Normalize(); // 정규화
-		cameraRight.Normalize();
-
-		// 카메라 방향을 기준으로한 이동 벡터
-		Vector3 movement = (cameraForward * moveVertical) + (cameraRight * moveHorizontal);
-
-		if (movement.magnitude > 0.1f)
+		// Check if we have some input
+		if (moveDirection.magnitude > 0.1f)
 		{
-			Quaternion newRotation = Quaternion.LookRotation(movement);
-			transform.rotation = Quaternion.Slerp(transform.rotation, newRotation, turnSpeed * Time.deltaTime);
+			// Normalize the movement vector and make it proportional to the speed per second
+			moveDirection.Normalize();
 
-			transform.Translate(movement.normalized * moveSpeed * Time.deltaTime, Space.World);
+			// Move the player
+			rb.MovePosition(rb.position + moveDirection * speed * Time.deltaTime);
 
-			animator.SetFloat("Speed", movement.magnitude);
-		}
-		else
-		{
-			animator.SetFloat("Speed", 0);
+			// Calculate the target rotation based on the move direction
+			Quaternion toRotation = Quaternion.LookRotation(moveDirection, Vector3.up);
+
+			// Rotate the player smoothly towards the target direction
+			rb.rotation = Quaternion.RotateTowards(rb.rotation, toRotation, rotationSpeed * Time.deltaTime);
 		}
 	}
 }
